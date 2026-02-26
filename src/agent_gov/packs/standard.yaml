@@ -1,0 +1,57 @@
+name: standard
+version: "1.0"
+description: >
+  Standard policy pack with all four built-in rules at balanced thresholds.
+  Suitable for most production agent workloads requiring PII protection,
+  role-based access, cost controls, and keyword blocking.
+metadata:
+  preset: standard
+  author: agent-gov
+  category: production
+rules:
+  - name: pii-detection
+    type: pii_check
+    enabled: true
+    severity: high
+    params:
+      check_ssn: true
+      check_credit_card: true
+      check_email: true
+      check_phone: true
+
+  - name: role-access-control
+    type: role_check
+    enabled: true
+    severity: high
+    params:
+      agent_role_field: agent_role
+      required_roles:
+        - operator
+        - admin
+        - "service:*"
+
+  - name: cost-controls
+    type: cost_limit
+    enabled: true
+    severity: medium
+    params:
+      cost_field: cost
+      max_cost_per_action: 0.50
+      max_cost_aggregate: 25.00
+
+  - name: keyword-blocking
+    type: keyword_block
+    enabled: true
+    severity: high
+    params:
+      case_sensitive: false
+      match_whole_word: false
+      keywords:
+        - "drop table"
+        - "delete from"
+        - "truncate table"
+        - "exec("
+        - "eval("
+        - "system("
+        - "rm -rf"
+        - "format c:"

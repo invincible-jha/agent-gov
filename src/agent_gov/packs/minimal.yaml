@@ -1,0 +1,35 @@
+name: minimal
+version: "1.0"
+description: >
+  Minimal policy pack with PII detection and keyword blocking.
+  Suitable for low-risk agent workloads where basic data hygiene
+  and explicit content blocking are required.
+metadata:
+  preset: minimal
+  author: agent-gov
+  category: starter
+rules:
+  - name: pii-detection
+    type: pii_check
+    enabled: true
+    severity: high
+    params:
+      check_ssn: true
+      check_credit_card: true
+      check_email: true
+      check_phone: true
+
+  - name: keyword-blocking
+    type: keyword_block
+    enabled: true
+    severity: high
+    params:
+      case_sensitive: false
+      match_whole_word: false
+      keywords:
+        - "drop table"
+        - "delete from"
+        - "truncate table"
+        - "exec("
+        - "eval("
+        - "system("

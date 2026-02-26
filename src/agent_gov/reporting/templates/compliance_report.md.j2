@@ -1,0 +1,32 @@
+# {{ title }}
+
+**Generated:** {{ generated_at }}
+**Overall Compliance Score:** {{ "%.1f"|format(overall_score) }}%
+**Frameworks Evaluated:** {{ framework_count }}
+
+---
+
+{% if frameworks %}
+{% for framework in frameworks %}
+## {{ framework.framework | upper }}
+
+| Metric | Value |
+|--------|-------|
+| Score | {{ "%.1f"|format(framework.score_percent) }}% |
+| Passed | {{ framework.passed }} / {{ framework.total }} |
+| Failed | {{ framework.failed }} |
+| Unknown | {{ framework.unknown }} |
+
+### Checklist
+
+| ID | Name | Category | Status | Evidence |
+|----|------|----------|--------|----------|
+{% for result in framework.results %}
+| {{ result.id }} | {{ result.name }} | {{ result.category if result.category else "—" }} | {{ result.status | upper }} | {{ result.evidence if result.evidence else "—" }} |
+{% endfor %}
+
+---
+{% endfor %}
+{% else %}
+No compliance framework results available.
+{% endif %}

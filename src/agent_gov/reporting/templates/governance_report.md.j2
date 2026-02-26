@@ -1,0 +1,50 @@
+# {{ title }}
+
+**Generated:** {{ generated_at }}
+**Policy:** {{ policy_name if policy_name else "All Policies" }}
+**Pass Rate:** {{ "%.2f"|format(pass_rate_percent) if pass_rate_percent is not none else "N/A" }}%
+
+---
+
+## Audit Summary
+
+{% if audit_summary %}
+| Metric | Value |
+|--------|-------|
+| Total Entries | {{ audit_summary.total_entries }} |
+| Passed | {{ audit_summary.pass_count }} |
+| Failed | {{ audit_summary.fail_count }} |
+| Distinct Agents | {{ audit_summary.agents | length }} |
+| Action Types | {{ audit_summary.action_types | join(", ") if audit_summary.action_types else "N/A" }} |
+{% else %}
+No audit data available.
+{% endif %}
+
+---
+
+## Evaluation Results
+
+{% if evaluation_results %}
+{% for result in evaluation_results %}
+### Policy: `{{ result.policy_name }}`
+
+- **Status:** {{ "PASS" if result.passed else "FAIL" }}
+- **Violations:** {{ result.violation_count }}
+- **Highest Severity:** {{ result.highest_severity }}
+- **Timestamp:** {{ result.timestamp }}
+
+{% if result.verdicts %}
+#### Rule Verdicts
+
+| Rule | Status | Severity | Message |
+|------|--------|----------|---------|
+{% for verdict in result.verdicts %}
+| {{ verdict.rule_name }} | {{ "PASS" if verdict.passed else "FAIL" }} | {{ verdict.severity }} | {{ verdict.message }} |
+{% endfor %}
+{% endif %}
+
+---
+{% endfor %}
+{% else %}
+No evaluation results available.
+{% endif %}

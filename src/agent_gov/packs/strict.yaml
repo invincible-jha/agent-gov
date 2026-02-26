@@ -1,0 +1,66 @@
+name: strict
+version: "1.0"
+description: >
+  Strict policy pack with all four built-in rules at tight thresholds.
+  Suitable for high-risk or regulated environments (healthcare, finance)
+  where conservative guardrails are required. Intended for use with all
+  compliance frameworks (EU AI Act, GDPR, HIPAA, SOC 2).
+metadata:
+  preset: strict
+  author: agent-gov
+  category: regulated
+  frameworks: "eu-ai-act,gdpr,hipaa,soc2"
+rules:
+  - name: pii-detection
+    type: pii_check
+    enabled: true
+    severity: critical
+    params:
+      check_ssn: true
+      check_credit_card: true
+      check_email: true
+      check_phone: true
+
+  - name: role-access-control
+    type: role_check
+    enabled: true
+    severity: critical
+    params:
+      agent_role_field: agent_role
+      required_roles:
+        - admin
+        - "compliance:*"
+        - "auditor:*"
+
+  - name: cost-controls
+    type: cost_limit
+    enabled: true
+    severity: high
+    params:
+      cost_field: cost
+      max_cost_per_action: 0.10
+      max_cost_aggregate: 5.00
+
+  - name: keyword-blocking
+    type: keyword_block
+    enabled: true
+    severity: critical
+    params:
+      case_sensitive: false
+      match_whole_word: false
+      keywords:
+        - "drop table"
+        - "delete from"
+        - "truncate table"
+        - "exec("
+        - "eval("
+        - "system("
+        - "rm -rf"
+        - "format c:"
+        - "shutdown"
+        - "reboot"
+        - "passwd"
+        - "sudo"
+        - "base64"
+        - "wget"
+        - "curl"
