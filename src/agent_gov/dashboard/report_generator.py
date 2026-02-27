@@ -1,0 +1,278 @@
+"""Auditor-ready compliance report generator.
+
+Generates structured compliance reports in Markdown and JSON format
+from evidence entries and posture scores.  Reports are designed to be
+handed directly to auditors without further processing.
+
+Usage
+-----
+::
+
+    from agent_gov.dashboard.report_generator import ReportGenerator
+
+    generator = ReportGenerator(system_name="MyAgent")
+    md = generator.generate_markdown(evidence, posture_score)
+    data = generator.generate_json(evidence, posture_score)
+"""
+from __future__ import annotations
+
+import json
+from datetime import datetime, timezone
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from agent_gov.dashboard.evidence_collector import EvidenceEntry
+    from agent_gov.dashboard.posture_scorer import PostureScore
+
+
+def _utc_now_str() -> str:
+    """Return the current UTC time as an ISO 8601 string."""
+    return datetime.now(tz=timezone.utc).isoformat()
+
+
+class ReportGenerator:
+    """Generates auditor-ready compliance reports.
+
+    Parameters
+    ----------
+    system_name:
+        Display name of the AI system being reported on.
+    include_context:
+        When ``True``, include the ``context`` dict from each evidence
+        entry in the reports.  Defaults to ``False`` (context may contain
+        sensitive runtime data).
+    """
+
+    def __init__(
+        self,
+        system_name: str = "AI System",
+        include_context: bool = False,
+    ) -> None:
+        self._system_name = system_name
+        self._include_context = include_context
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
+
+    def generate_markdown(
+        self,
+        evidence: list[EvidenceEntry],
+        posture: PostureScore,
+    ) -> str:
+        """Generate an auditor-ready Markdown compliance report.
+
+        Parameters
+        ----------
+        evidence:
+            List of evidence entries to include.
+        posture:
+            Pre-computed posture score.
+
+        Returns
+        -------
+        str
+            Complete Markdown document.
+        """
+        lines: list[str] = []
+
+        # Title
+        lines.append(f"# Compliance Report — {self._system_name}")
+        lines.append("")
+        lines.append(f"**Generated:** {_utc_now_str()}")
+        lines.append(f"**Evidence entries:** {len(evidence)}")
+        lines.append("")
+        lines.append("---")
+        lines.append("")
+
+        # Posture summary
+        lines.append("## Compliance Posture Summary")
+        lines.append("")
+        lines.append(f"| Metric | Value |")
+        lines.append(f"|--------|-------|")
+        lines.append(f"| Overall Score | {posture.overall_score:.1f}% |")
+        lines.append(f"| Grade | {posture.grade()} |")
+        lines.append(f"| Pass | {posture.pass_count} |")
+        lines.append(f"| Fail | {posture.fail_count} |")
+        lines.append(f"| Skip | {posture.skip_count} |")
+        lines.append(f"| Total Evaluated | {posture.total_entries} |")
+        lines.append("")
+
+        # Per-policy breakdown
+        if posture.per_policy:
+            lines.append("## Per-Policy Breakdown")
+            lines.append("")
+            lines.append("| Policy | Score |")
+            lines.append("|--------|-------|")
+            for policy_id, policy_score in sorted(posture.per_policy.items()):
+                lines.append(f"| {policy_id} | {policy_score:.1f}% |")
+            lines.append("")
+
+        # Evidence detail
+        lines.append("## Evidence Detail")
+        lines.append("")
+
+        if not evidence:
+            lines.append("_No evidence entries recorded._")
+            lines.append("")
+        else:
+            lines.append("| Timestamp | Policy | Rule | Result |")
+            lines.append("|-----------|--------|------|--------|")
+            for entry in evidence:
+                ts = entry.timestamp.strftime("%Y-%m-%d %H:%M:%S")
+                result_icon = {"pass": "PASS", "fail": "FAIL", "skip": "SKIP"}.get(
+                    entry.result, entry.result.upper()
+                )
+                lines.append(
+                    f"| {ts} | {entry.policy_id} | {entry.rule_id} | {result_icon} |"
+                )
+            lines.append("")
+
+        # Failures section
+        failures = [e for e in evidence if e.result == "fail"]
+        if failures:
+            lines.append("## Failures Requiring Remediation")
+            lines.append("")
+            for entry in failures:
+                lines.append(
+                    f"- **{entry.policy_id} / {entry.rule_id}** "
+                    f"({entry.timestamp.strftime('%Y-%m-%d %H:%M:%S')})"
+                )
+                if self._include_context and entry.context:
+                    for key, value in entry.context.items():
+                        lines.append(f"  - {key}: {value}")
+            lines.append("")
+
+        lines.append("---")
+        lines.append("")
+        lines.append("_Report generated by agent-gov ReportGenerator._")
+
+        return "\n".join(lines)
+
+    def generate_json(
+        self,
+        evidence: list[EvidenceEntry],
+        posture: PostureScore,
+    ) -> dict[str, object]:
+        """Generate a structured JSON-serialisable compliance report dictionary.
+
+        Parameters
+        ----------
+        evidence:
+            List of evidence entries.
+        posture:
+            Pre-computed posture score.
+
+        Returns
+        -------
+        dict[str, object]
+            JSON-serialisable report dictionary.
+        """
+        evidence_records: list[dict[str, object]] = []
+        for entry in evidence:
+            record: dict[str, object] = {
+                "timestamp": entry.timestamp.isoformat(),
+                "policy_id": entry.policy_id,
+                "rule_id": entry.rule_id,
+                "result": entry.result,
+            }
+            if self._include_context:
+                record["context"] = entry.context
+            evidence_records.append(record)
+
+        return {
+            "system_name": self._system_name,
+            "generated_at": _utc_now_str(),
+            "posture": posture.to_dict(),
+            "evidence_count": len(evidence),
+            "evidence": evidence_records,
+            "failures": [
+                {
+                    "policy_id": e.policy_id,
+                    "rule_id": e.rule_id,
+                    "timestamp": e.timestamp.isoformat(),
+                }
+                for e in evidence
+                if e.result == "fail"
+            ],
+        }
+
+    def generate_json_string(
+        self,
+        evidence: list[EvidenceEntry],
+        posture: PostureScore,
+        indent: int = 2,
+    ) -> str:
+        """Return the JSON report as a formatted string.
+
+        Parameters
+        ----------
+        evidence:
+            List of evidence entries.
+        posture:
+            Pre-computed posture score.
+        indent:
+            JSON indentation level.
+
+        Returns
+        -------
+        str
+            Formatted JSON string.
+        """
+        return json.dumps(
+            self.generate_json(evidence, posture),
+            indent=indent,
+            ensure_ascii=False,
+        )
+
+    def write_markdown(
+        self,
+        evidence: list[EvidenceEntry],
+        posture: PostureScore,
+        path: object,
+    ) -> None:
+        """Write the Markdown report to a file at *path*.
+
+        Parameters
+        ----------
+        evidence:
+            List of evidence entries.
+        posture:
+            Pre-computed posture score.
+        path:
+            :class:`pathlib.Path` or string path for the output file.
+        """
+        from pathlib import Path
+
+        content = self.generate_markdown(evidence, posture)
+        Path(path).write_text(content, encoding="utf-8")
+
+    def write_json(
+        self,
+        evidence: list[EvidenceEntry],
+        posture: PostureScore,
+        path: object,
+        indent: int = 2,
+    ) -> None:
+        """Write the JSON report to a file at *path*.
+
+        Parameters
+        ----------
+        evidence:
+            List of evidence entries.
+        posture:
+            Pre-computed posture score.
+        path:
+            :class:`pathlib.Path` or string path for the output file.
+        indent:
+            JSON indentation level.
+        """
+        from pathlib import Path
+
+        content = self.generate_json_string(evidence, posture, indent=indent)
+        Path(path).write_text(content, encoding="utf-8")
+
+
+__all__ = [
+    "ReportGenerator",
+]

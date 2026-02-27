@@ -31,7 +31,6 @@ import json
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
 
 
 @dataclass
@@ -121,14 +120,14 @@ class AnnexIVDocumentation:
     data_quality_metrics: str = ""
 
     # Annex IV(6) — Performance
-    performance_metrics: dict[str, Any] = field(default_factory=dict)
-    testing_results: dict[str, Any] = field(default_factory=dict)
+    performance_metrics: dict[str, object] = field(default_factory=dict)
+    testing_results: dict[str, object] = field(default_factory=dict)
     known_limitations: list[str] = field(default_factory=list)
 
     # Annex IV(7) — Cybersecurity
     cybersecurity_assessment: str = ""
     robustness_measures: str = ""
-    security_scan_results: dict[str, Any] = field(default_factory=dict)
+    security_scan_results: dict[str, object] = field(default_factory=dict)
 
     # Metadata
     generated_at: str = field(

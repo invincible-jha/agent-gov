@@ -65,7 +65,10 @@ from agent_gov.rules.role_check import RoleCheckRule
 
 __version__: str = "0.1.0"
 
+from agent_gov.convenience import GovernanceEngine
+
 __all__ = [
+    "GovernanceEngine",
     # Version
     "__version__",
     # Audit
