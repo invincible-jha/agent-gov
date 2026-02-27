@@ -1,0 +1,53 @@
+id: general-output-length-limit
+name: Output Length Limit Policy
+version: "1.0"
+domain: general
+description: |
+  Enforces maximum output length limits for AI agent responses to prevent
+  excessive token usage, reduce costs, and ensure responses remain consumable
+  by downstream systems. Applies configurable soft (warn) and hard (block) limits
+  at character, word, and token levels. Helps prevent prompt injection attacks
+  that attempt to extract large volumes of data.
+severity: low
+rules:
+  - id: output-length-token-warn
+    name: Warn on Long Output
+    condition: output_length
+    parameters:
+      max_tokens: 4000
+      field: output_tokens
+    action: warn
+    message: "Output exceeds 4,000 tokens — consider requesting a more concise response."
+  - id: output-length-token-block
+    name: Block Excessively Long Output
+    condition: output_length
+    parameters:
+      max_tokens: 16000
+      field: output_tokens
+    action: block
+    message: "Output exceeds 16,000 tokens — blocked to prevent excessive resource usage."
+  - id: output-length-char-limit
+    name: Enforce Character Limit for UI Rendering
+    condition: output_length
+    parameters:
+      max_chars: 50000
+      field: output_chars
+    action: warn
+    message: "Output exceeds 50,000 characters — may cause UI rendering issues."
+  - id: output-length-data-exfil-guard
+    name: Block Suspiciously Large Output
+    condition: output_length
+    parameters:
+      max_tokens: 100000
+      field: output_tokens
+    action: block
+    message: "Output size is unusually large — potential data exfiltration attempt blocked."
+references:
+  - "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+  - "OWASP LLM Top 10 — LLM02: Insecure Output Handling"
+tags:
+  - output-limits
+  - general
+  - cost-management
+  - security
+  - data-exfiltration

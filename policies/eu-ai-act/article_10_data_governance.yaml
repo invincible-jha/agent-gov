@@ -1,0 +1,62 @@
+id: eu-ai-act-article-10-data-governance
+name: EU AI Act Article 10 — Data and Data Governance
+version: "1.0"
+domain: eu-ai-act
+description: |
+  Enforces data governance requirements for high-risk AI systems as specified
+  in EU AI Act Article 10. Requires that training, validation, and testing datasets
+  meet quality criteria including relevance, representativeness, freedom from errors,
+  and completeness. Ensures examination for biases and appropriate data protection
+  measures.
+severity: high
+rules:
+  - id: art10-no-biased-training-data
+    name: Warn on Potentially Biased Training Data
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "train on biased dataset"
+        - "use unrepresentative data"
+        - "ignore demographic balance"
+        - "skip bias evaluation"
+      target: input
+      case_sensitive: false
+    action: warn
+    message: "Potential data bias concern — EU AI Act Article 10 requires representative and bias-free training data."
+  - id: art10-data-quality-checks
+    name: Require Data Quality Documentation
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "train model"
+        - "fine-tune model"
+        - "update training data"
+        - "new training dataset"
+      target: input
+      require_field: data_governance_doc
+      case_sensitive: false
+    action: warn
+    message: "Training data changes require data governance documentation per EU AI Act Article 10."
+  - id: art10-special-category-data
+    name: Block Special Category Data in Training Without Safeguards
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "train on health data without consent"
+        - "use racial data for training"
+        - "biometric training data unprotected"
+        - "political opinion training data"
+      target: input
+      case_sensitive: false
+    action: block
+    message: "Special category data in AI training requires explicit safeguards per EU AI Act Article 10(5)."
+references:
+  - "https://artificialintelligenceact.eu/the-act/"
+  - "EU AI Act Article 10 — Data and Data Governance"
+  - "Regulation (EU) 2024/1689 Chapter III, Section 2"
+tags:
+  - eu-ai-act
+  - article-10
+  - data-governance
+  - training-data
+  - bias

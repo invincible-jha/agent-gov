@@ -1,0 +1,63 @@
+id: eu-ai-act-article-14-human-oversight
+name: EU AI Act Article 14 — Human Oversight
+version: "1.0"
+domain: eu-ai-act
+description: |
+  Enforces human oversight requirements for high-risk AI systems as mandated by
+  EU AI Act Article 14. High-risk AI systems must be designed and developed with
+  appropriate human-machine interface tools allowing effective oversight by natural
+  persons. Ensures humans can understand, monitor, intervene, override, and stop
+  AI system operations.
+severity: critical
+rules:
+  - id: art14-override-capability
+    name: Block Removal of Human Override
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "disable human override"
+        - "remove kill switch"
+        - "bypass human approval"
+        - "disable human-in-the-loop"
+        - "remove human control"
+        - "operate without human oversight"
+      target: input
+      case_sensitive: false
+    action: block
+    message: "Removing human oversight capability is prohibited for high-risk AI systems under EU AI Act Article 14."
+  - id: art14-automated-decision-warn
+    name: Warn on Fully Automated High-Stakes Decisions
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "fully automated decision"
+        - "no human review"
+        - "autonomous final decision"
+        - "AI-only determination"
+      target: input
+      case_sensitive: false
+    action: warn
+    message: "Fully automated high-stakes decisions require human oversight review per EU AI Act Article 14."
+  - id: art14-stop-mechanism
+    name: Require Stop Mechanism Documentation
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "continuous operation"
+        - "autonomous long-running task"
+        - "unmonitored AI process"
+      target: input
+      require_field: stop_mechanism
+      case_sensitive: false
+    action: warn
+    message: "Long-running autonomous AI processes require a documented stop mechanism per EU AI Act Article 14."
+references:
+  - "https://artificialintelligenceact.eu/the-act/"
+  - "EU AI Act Article 14 — Human Oversight"
+  - "Regulation (EU) 2024/1689 Chapter III, Section 2"
+tags:
+  - eu-ai-act
+  - article-14
+  - human-oversight
+  - human-in-the-loop
+  - control

@@ -1,0 +1,53 @@
+id: hipaa-minimum-necessary
+name: HIPAA Minimum Necessary Standard
+version: "1.0"
+domain: healthcare
+description: |
+  Implements the HIPAA Minimum Necessary Standard, which requires covered entities
+  and their business associates to make reasonable efforts to limit the use,
+  disclosure, or request of PHI to the minimum necessary to accomplish the intended
+  purpose. AI agents must not request or return more health data than needed.
+severity: high
+rules:
+  - id: min-necessary-bulk-phi
+    name: Detect Bulk PHI Requests
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "all patient records"
+        - "complete patient list"
+        - "export all health records"
+        - "dump patient database"
+      target: input
+      case_sensitive: false
+    action: block
+    message: "Request exceeds minimum necessary standard — bulk PHI access denied."
+  - id: min-necessary-field-limit
+    name: Enforce Field Limitation Warning
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "full medical history"
+        - "complete treatment history"
+        - "all diagnoses"
+        - "entire chart"
+      target: input
+      case_sensitive: false
+    action: warn
+    message: "Request may exceed minimum necessary standard — review scope of PHI access."
+  - id: min-necessary-cost-proxy
+    name: Cap Records Per Request
+    condition: cost_limit
+    parameters:
+      max_records: 100
+      field: record_count
+    action: block
+    message: "Record count exceeds minimum necessary limit of 100 per request."
+references:
+  - "https://www.hhs.gov/hipaa/for-professionals/privacy/guidance/minimum-necessary-requirement/index.html"
+  - "45 CFR 164.502(b) — Minimum Necessary"
+tags:
+  - hipaa
+  - minimum-necessary
+  - healthcare
+  - data-access

@@ -1,0 +1,80 @@
+id: gdpr-consent-management
+name: GDPR Consent Management Controls
+version: "1.0"
+domain: gdpr
+description: |
+  Implements GDPR consent requirements (Articles 6, 7, and 9) for AI agent data
+  processing. Ensures that AI agents only process personal data when a valid legal
+  basis exists, that consent is freely given, specific, informed, and unambiguous,
+  and that special category data processing requires explicit consent. Prevents
+  processing without verified consent records.
+severity: critical
+rules:
+  - id: gdpr-consent-required-field
+    name: Require Consent Record for Personal Data Processing
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "process personal data"
+        - "use personal information"
+        - "analyse user behaviour"
+        - "profile user"
+        - "track user activity"
+      target: input
+      require_field: consent_id
+      case_sensitive: false
+    action: warn
+    message: "Personal data processing requires a valid consent record per GDPR Article 6."
+  - id: gdpr-consent-no-pre-ticked
+    name: Block Pre-Ticked or Default Consent
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "default consent to true"
+        - "pre-checked consent"
+        - "opt-out by default"
+        - "assume consent"
+        - "implicit consent"
+      target: input
+      case_sensitive: false
+    action: block
+    message: "Pre-ticked or assumed consent is invalid under GDPR Article 7(2) — consent must be explicit."
+  - id: gdpr-consent-special-category
+    name: Block Special Category Processing Without Explicit Consent
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "process health data without consent"
+        - "analyse racial data"
+        - "process biometric data without explicit"
+        - "process political opinion data"
+        - "process sexual orientation data"
+      target: input
+      case_sensitive: false
+    action: block
+    message: "Special category data processing requires explicit consent per GDPR Article 9(2)(a)."
+  - id: gdpr-consent-withdrawal
+    name: Log Consent Withdrawal Events
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "withdraw consent"
+        - "revoke consent"
+        - "opt out"
+        - "unsubscribe from data processing"
+      target: input
+      case_sensitive: false
+    action: log
+    message: "Consent withdrawal event logged — processing must cease per GDPR Article 7(3)."
+references:
+  - "https://gdpr-info.eu/art-6-gdpr/"
+  - "https://gdpr-info.eu/art-7-gdpr/"
+  - "GDPR Articles 6, 7, 9 — Lawfulness of Processing and Consent"
+  - "EDPB Guidelines 05/2020 on Consent"
+tags:
+  - gdpr
+  - consent
+  - article-6
+  - article-7
+  - article-9
+  - lawful-basis

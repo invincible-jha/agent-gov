@@ -1,0 +1,63 @@
+id: sox-data-integrity
+name: SOX Data Integrity Controls
+version: "1.0"
+domain: finance
+description: |
+  Implements Sarbanes-Oxley Act (SOX) Section 302 and 404 requirements for
+  data integrity in AI-assisted financial reporting. Ensures that AI agents
+  cannot modify, delete, or alter financial records without appropriate controls,
+  and that all financial data manipulations are traceable and auditable.
+severity: critical
+rules:
+  - id: sox-no-delete-financial-records
+    name: Block Financial Record Deletion
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "delete financial record"
+        - "remove transaction"
+        - "purge ledger"
+        - "drop financial table"
+        - "truncate accounts"
+      target: input
+      case_sensitive: false
+    action: block
+    message: "Deletion of financial records violates SOX data integrity requirements."
+  - id: sox-modification-requires-justification
+    name: Require Justification for Financial Modifications
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "update balance"
+        - "modify transaction"
+        - "adjust ledger entry"
+        - "correct financial record"
+      target: input
+      require_field: justification
+      case_sensitive: false
+    action: warn
+    message: "Financial record modification must include justification for SOX compliance."
+  - id: sox-audit-log-required
+    name: Enforce Audit Log for Financial Operations
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "journal entry"
+        - "account reconciliation"
+        - "financial statement"
+        - "balance sheet"
+        - "income statement"
+      target: input
+      case_sensitive: false
+    action: log
+    message: "Financial operation logged per SOX audit trail requirements."
+references:
+  - "https://www.sec.gov/spotlight/sarbanes-oxley.htm"
+  - "SOX Section 302 — Corporate Responsibility for Financial Reports"
+  - "SOX Section 404 — Management Assessment of Internal Controls"
+tags:
+  - sox
+  - finance
+  - data-integrity
+  - audit
+  - financial-reporting

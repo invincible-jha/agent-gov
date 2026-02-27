@@ -1,0 +1,62 @@
+id: gdpr-right-to-erasure
+name: GDPR Right to Erasure (Right to Be Forgotten)
+version: "1.0"
+domain: gdpr
+description: |
+  Implements GDPR Article 17 (Right to Erasure / Right to Be Forgotten) controls
+  for AI agent operations. Ensures that AI agents support and do not obstruct
+  data subject erasure requests. Prevents AI agents from retaining, re-surfacing,
+  or reconstructing data about individuals who have exercised their erasure rights.
+severity: high
+rules:
+  - id: gdpr-erasure-no-retain-after-request
+    name: Block Retention After Erasure Request
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "keep data despite deletion request"
+        - "retain after erasure"
+        - "ignore deletion request"
+        - "override right to be forgotten"
+        - "bypass erasure request"
+      target: input
+      case_sensitive: false
+    action: block
+    message: "Retaining data after a valid erasure request violates GDPR Article 17."
+  - id: gdpr-erasure-log-request
+    name: Log Erasure Request Events
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "delete my data"
+        - "right to be forgotten"
+        - "erase my information"
+        - "remove my personal data"
+        - "data deletion request"
+      target: input
+      case_sensitive: false
+    action: log
+    message: "Erasure request detected — logged for compliance tracking per GDPR Article 17."
+  - id: gdpr-erasure-no-reconstruct
+    name: Block Reconstruction of Erased Data
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "reconstruct deleted user data"
+        - "recover erased personal data"
+        - "restore deleted profile"
+        - "re-identify anonymized data"
+      target: input
+      case_sensitive: false
+    action: block
+    message: "Reconstruction of erased personal data is prohibited under GDPR Article 17."
+references:
+  - "https://gdpr-info.eu/art-17-gdpr/"
+  - "GDPR Article 17 — Right to Erasure ('right to be forgotten')"
+  - "EDPB Guidelines on the Right to Erasure"
+tags:
+  - gdpr
+  - right-to-erasure
+  - article-17
+  - privacy
+  - data-subject-rights

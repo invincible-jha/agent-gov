@@ -1,0 +1,61 @@
+id: hipaa-audit-trail
+name: HIPAA Audit Trail Requirements
+version: "1.0"
+domain: healthcare
+description: |
+  Enforces HIPAA Security Rule requirements for audit controls. Requires that
+  AI agents accessing or processing PHI generate appropriate audit records for
+  all access, modification, or disclosure events. Ensures traceability and
+  accountability for all PHI interactions.
+severity: high
+rules:
+  - id: audit-phi-access-required
+    name: Require Agent ID for PHI Access
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "patient record"
+        - "medical record"
+        - "health information"
+        - "diagnosis"
+        - "treatment plan"
+      target: input
+      require_field: agent_id
+      case_sensitive: false
+    action: log
+    message: "PHI access event logged for audit trail compliance."
+  - id: audit-no-anonymous-phi
+    name: Block Anonymous PHI Access
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "patient data"
+        - "health record"
+        - "clinical note"
+      target: input
+      deny_if_missing_field: agent_id
+      case_sensitive: false
+    action: block
+    message: "Anonymous access to PHI is prohibited — agent_id required."
+  - id: audit-timestamp-required
+    name: Require Timestamp on Health Queries
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "patient"
+        - "diagnosis"
+        - "medication"
+      target: input
+      require_field: timestamp
+      case_sensitive: false
+    action: warn
+    message: "PHI query missing timestamp — audit trail may be incomplete."
+references:
+  - "https://www.hhs.gov/hipaa/for-professionals/security/guidance/index.html"
+  - "45 CFR 164.312(b) — Audit Controls"
+tags:
+  - hipaa
+  - audit
+  - healthcare
+  - security-rule
+  - accountability

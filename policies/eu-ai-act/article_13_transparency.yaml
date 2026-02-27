@@ -1,0 +1,64 @@
+id: eu-ai-act-article-13-transparency
+name: EU AI Act Article 13 — Transparency and Provision of Information
+version: "1.0"
+domain: eu-ai-act
+description: |
+  Implements transparency requirements for high-risk AI systems as defined in
+  EU AI Act Article 13. High-risk AI systems must be designed to ensure that
+  their operation is sufficiently transparent that deployers can interpret outputs
+  and use them appropriately. Includes requirements for instructions for use and
+  disclosure of AI-generated content.
+severity: high
+rules:
+  - id: art13-disclose-ai-identity
+    name: Require AI Identity Disclosure
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "pretend to be human"
+        - "claim to be a person"
+        - "deny being AI"
+        - "impersonate human"
+        - "act as if not AI"
+      target: input
+      case_sensitive: false
+    action: block
+    message: "AI systems must not deny their AI nature when asked — EU AI Act Article 13 transparency requirement."
+  - id: art13-output-explainability
+    name: Warn on Unexplained High-Stakes Output
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "reject application"
+        - "deny credit"
+        - "refuse loan"
+        - "deny employment"
+        - "reject candidate"
+      target: output
+      case_sensitive: false
+    action: warn
+    message: "High-stakes decision output — explanation and reasoning must be provided per EU AI Act Article 13."
+  - id: art13-documentation-required
+    name: Require Technical Documentation Reference
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "deploy in critical infrastructure"
+        - "deploy in healthcare"
+        - "deploy in education"
+        - "deploy in law enforcement"
+      target: input
+      require_field: technical_documentation_ref
+      case_sensitive: false
+    action: warn
+    message: "High-risk deployment requires technical documentation per EU AI Act Article 13."
+references:
+  - "https://artificialintelligenceact.eu/the-act/"
+  - "EU AI Act Article 13 — Transparency and Provision of Information to Deployers"
+  - "Regulation (EU) 2024/1689 Chapter III, Section 2"
+tags:
+  - eu-ai-act
+  - article-13
+  - transparency
+  - explainability
+  - disclosure

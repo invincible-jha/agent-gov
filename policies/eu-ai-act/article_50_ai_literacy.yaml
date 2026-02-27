@@ -1,0 +1,62 @@
+id: eu-ai-act-article-50-ai-literacy
+name: EU AI Act Article 50 — AI Literacy and Transparency Obligations
+version: "1.0"
+domain: eu-ai-act
+description: |
+  Implements transparency obligations for certain AI systems under EU AI Act
+  Article 50. Requires disclosure when users interact with AI systems, when
+  AI generates content that could be mistaken as authentic, and when emotion
+  recognition or biometric categorisation systems are used. Supports AI literacy
+  obligations for providers and deployers.
+severity: medium
+rules:
+  - id: art50-chatbot-disclosure
+    name: Require Chatbot AI Disclosure
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "you are talking to"
+        - "this is a customer service agent"
+        - "speaking with support"
+      target: output
+      require_disclosure: true
+      case_sensitive: false
+    action: warn
+    message: "AI-powered chatbot must disclose its artificial nature to users per EU AI Act Article 50(1)."
+  - id: art50-deepfake-labeling
+    name: Block Unlabeled Synthetic Media
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "generate realistic photo of person"
+        - "create deepfake video"
+        - "synthesize voice of"
+        - "generate audio impersonating"
+      target: input
+      case_sensitive: false
+    action: warn
+    message: "AI-generated synthetic media must be labeled as artificially generated per EU AI Act Article 50(4)."
+  - id: art50-emotion-recognition-disclosure
+    name: Require Emotion Recognition Disclosure
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "analyze employee emotions"
+        - "detect emotional state"
+        - "emotion recognition scan"
+        - "affective computing"
+      target: input
+      case_sensitive: false
+    action: warn
+    message: "Emotion recognition system use must be disclosed to affected persons per EU AI Act Article 50(3)."
+references:
+  - "https://artificialintelligenceact.eu/the-act/"
+  - "EU AI Act Article 50 — Transparency Obligations for Providers and Deployers"
+  - "Regulation (EU) 2024/1689 Chapter IV"
+tags:
+  - eu-ai-act
+  - article-50
+  - transparency
+  - ai-literacy
+  - disclosure
+  - synthetic-media

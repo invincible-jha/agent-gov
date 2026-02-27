@@ -1,0 +1,63 @@
+id: gdpr-data-minimization
+name: GDPR Data Minimization Principle
+version: "1.0"
+domain: gdpr
+description: |
+  Implements the GDPR data minimization principle (Article 5(1)(c)), requiring
+  that personal data processed by AI agents be adequate, relevant, and limited
+  to what is necessary in relation to the purposes for which they are processed.
+  Prevents AI agents from requesting, collecting, or retaining more personal data
+  than strictly required for the declared processing purpose.
+severity: high
+rules:
+  - id: gdpr-min-no-bulk-personal-data
+    name: Block Bulk Personal Data Requests
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "collect all personal data"
+        - "gather all user information"
+        - "retrieve all profile fields"
+        - "export all user records"
+        - "dump personal data"
+      target: input
+      case_sensitive: false
+    action: block
+    message: "Bulk personal data collection blocked — GDPR Article 5(1)(c) data minimization principle."
+  - id: gdpr-min-purpose-required
+    name: Require Processing Purpose Declaration
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "process personal data"
+        - "store user information"
+        - "collect user data"
+        - "retain customer data"
+      target: input
+      require_field: processing_purpose
+      case_sensitive: false
+    action: warn
+    message: "Personal data processing requires declared purpose per GDPR Article 5(1)(b) purpose limitation."
+  - id: gdpr-min-no-unnecessary-fields
+    name: Warn on Unnecessary Data Field Collection
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "include all fields"
+        - "return all columns"
+        - "full user profile"
+        - "complete demographic data"
+      target: input
+      case_sensitive: false
+    action: warn
+    message: "Requesting all data fields may violate GDPR data minimization — specify only necessary fields."
+references:
+  - "https://gdpr-info.eu/art-5-gdpr/"
+  - "GDPR Article 5(1)(c) — Data Minimisation"
+  - "EDPB Guidelines 4/2019 on Article 25 Data Protection by Design"
+tags:
+  - gdpr
+  - data-minimization
+  - article-5
+  - privacy
+  - data-protection

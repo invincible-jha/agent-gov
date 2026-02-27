@@ -1,0 +1,54 @@
+id: general-pii-detection-blocking
+name: General PII Detection and Blocking
+version: "1.0"
+domain: general
+description: |
+  Detects and blocks or redacts Personally Identifiable Information (PII) in
+  AI agent inputs and outputs. Covers a broad range of PII categories including
+  names combined with identifiers, email addresses, phone numbers, national
+  identity numbers, IP addresses, and location data. Applicable across all
+  industries as a baseline privacy control.
+severity: high
+rules:
+  - id: pii-email-redact
+    name: Redact Email Addresses
+    condition: regex_match
+    parameters:
+      pattern: "\\b[A-Za-z0-9._%+\\-]+@[A-Za-z0-9.\\-]+\\.[A-Za-z]{2,}\\b"
+      target: output
+    action: redact
+    message: "Email address detected in output — redacted to protect PII."
+  - id: pii-phone-redact
+    name: Redact Phone Numbers
+    condition: regex_match
+    parameters:
+      pattern: "\\b(?:\\+?1[-.]?)?\\(?[0-9]{3}\\)?[-.]?[0-9]{3}[-.]?[0-9]{4}\\b"
+      target: output
+    action: redact
+    message: "Phone number detected in output — redacted to protect PII."
+  - id: pii-ssn-block
+    name: Block Social Security Numbers
+    condition: regex_match
+    parameters:
+      pattern: "\\b(?!219-09-9999|078-05-1120)(?!666|000|9\\d{2})\\d{3}-(?!00)\\d{2}-(?!0{4})\\d{4}\\b"
+      target: output
+    action: block
+    message: "Social Security Number detected — output blocked to prevent PII exposure."
+  - id: pii-ip-address-warn
+    name: Warn on IP Address in Output
+    condition: regex_match
+    parameters:
+      pattern: "\\b(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\b"
+      target: output
+    action: warn
+    message: "IP address detected in output — verify this is intentional and not a PII leak."
+references:
+  - "https://www.nist.gov/privacy-framework"
+  - "NIST SP 800-122 — Guide to Protecting the Confidentiality of PII"
+  - "ISO/IEC 29101 — Privacy Architecture Framework"
+tags:
+  - pii
+  - privacy
+  - general
+  - data-protection
+  - redaction

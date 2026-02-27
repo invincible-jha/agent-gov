@@ -1,0 +1,52 @@
+id: general-cost-limit-enforcement
+name: AI Cost Limit Enforcement
+version: "1.0"
+domain: general
+description: |
+  Enforces per-request and cumulative cost limits for AI agent operations to
+  prevent runaway spending. Applies token-based and dollar-value thresholds
+  at multiple granularities including per-request, per-session, per-agent,
+  and per-day. Supports warn and hard-block actions at configurable thresholds.
+severity: medium
+rules:
+  - id: cost-per-request-warn
+    name: Warn on High Per-Request Token Cost
+    condition: cost_limit
+    parameters:
+      max_tokens: 50000
+      field: input_tokens
+    action: warn
+    message: "Request input token count exceeds 50,000 — review for prompt efficiency."
+  - id: cost-per-request-block
+    name: Block Excessive Per-Request Cost
+    condition: cost_limit
+    parameters:
+      max_cost_usd: 5.00
+      field: estimated_cost_usd
+    action: block
+    message: "Estimated request cost exceeds $5.00 — blocked to prevent budget overrun."
+  - id: cost-daily-agent-limit
+    name: Block Agent Daily Spend Limit
+    condition: cost_limit
+    parameters:
+      max_cost_usd: 50.00
+      field: agent_daily_spend_usd
+    action: block
+    message: "Agent daily spend limit of $50.00 reached — further requests blocked until reset."
+  - id: cost-context-length-warn
+    name: Warn on Very Large Context Window
+    condition: cost_limit
+    parameters:
+      max_tokens: 200000
+      field: context_tokens
+    action: warn
+    message: "Context window exceeds 200,000 tokens — consider summarizing to reduce cost."
+references:
+  - "https://www.finops.org/framework/"
+  - "FinOps Foundation — AI/ML Cost Management Best Practices"
+tags:
+  - cost-management
+  - general
+  - token-limits
+  - budget
+  - finops

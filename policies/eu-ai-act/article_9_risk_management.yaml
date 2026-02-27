@@ -1,0 +1,62 @@
+id: eu-ai-act-article-9-risk-management
+name: EU AI Act Article 9 — Risk Management System
+version: "1.0"
+domain: eu-ai-act
+description: |
+  Implements requirements for a continuous risk management system as mandated by
+  EU AI Act Article 9 for high-risk AI systems. Requires identification and analysis
+  of known and foreseeable risks, estimation and evaluation of risks from intended
+  use and foreseeable misuse, adoption of risk mitigation measures, and residual
+  risk evaluation.
+severity: high
+rules:
+  - id: art9-risk-assessment-required
+    name: Require Risk Assessment Documentation
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "deploy AI system"
+        - "launch AI model"
+        - "production deployment"
+        - "go live with AI"
+      target: input
+      require_field: risk_assessment_id
+      case_sensitive: false
+    action: warn
+    message: "AI deployment requires a documented risk assessment per EU AI Act Article 9."
+  - id: art9-block-unassessed-high-risk
+    name: Block High-Risk AI Without Assessment
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "deploy high-risk AI"
+        - "launch biometric system"
+        - "deploy safety-critical AI"
+        - "activate automated decision system"
+      target: input
+      case_sensitive: false
+    action: block
+    message: "High-risk AI deployment blocked — risk management system documentation required per Article 9."
+  - id: art9-monitoring-required
+    name: Enforce Post-Market Monitoring
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "disable monitoring"
+        - "turn off safety checks"
+        - "bypass risk controls"
+        - "skip safety evaluation"
+      target: input
+      case_sensitive: false
+    action: block
+    message: "Disabling risk monitoring is prohibited for high-risk AI systems under EU AI Act Article 9."
+references:
+  - "https://artificialintelligenceact.eu/the-act/"
+  - "EU AI Act Article 9 — Risk Management System"
+  - "Regulation (EU) 2024/1689 Chapter III, Section 2"
+tags:
+  - eu-ai-act
+  - article-9
+  - risk-management
+  - high-risk
+  - compliance

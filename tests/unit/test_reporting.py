@@ -411,7 +411,7 @@ class TestTemplatesStandaloneModule:
     def test_templates_dict_has_known_keys(self) -> None:
         assert "minimal" in self._mod.TEMPLATES
         assert "basic" in self._mod.TEMPLATES
-        assert "enterprise" in self._mod.TEMPLATES
+        assert "full" in self._mod.TEMPLATES
 
     def test_list_templates_sorted(self) -> None:
         names = self._mod.list_templates()
@@ -434,7 +434,7 @@ class TestTemplatesStandaloneModule:
 
     def test_write_template_creates_parent_dirs(self, tmp_path: Path) -> None:
         output = tmp_path / "sub" / "dir" / "policy.yaml"
-        self._mod.write_template("enterprise", output)
+        self._mod.write_template("full", output)
         assert output.exists()
 
     def test_write_template_unknown_raises(self, tmp_path: Path) -> None:

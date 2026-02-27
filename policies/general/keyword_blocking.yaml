@@ -1,0 +1,76 @@
+id: general-keyword-blocking
+name: General Keyword Blocking Policy
+version: "1.0"
+domain: general
+description: |
+  Blocks AI agent requests and responses containing prohibited keywords and phrases.
+  Covers categories including harmful instructions, hate speech indicators,
+  illegal activity requests, and competitive intelligence gathering. Acts as a
+  general-purpose content filter applicable across all deployment contexts.
+severity: high
+rules:
+  - id: kw-block-harmful-instructions
+    name: Block Requests for Harmful Instructions
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "how to make a bomb"
+        - "how to synthesize drugs"
+        - "how to hack into"
+        - "instructions for violence"
+        - "how to bypass security"
+        - "exploit vulnerability tutorial"
+      target: input
+      case_sensitive: false
+    action: block
+    message: "Request for harmful instructions detected — blocked by content policy."
+  - id: kw-block-hate-speech
+    name: Block Hate Speech Generation
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "write hate speech"
+        - "generate racist content"
+        - "create discriminatory"
+        - "produce slurs"
+        - "write content dehumanizing"
+      target: input
+      case_sensitive: false
+    action: block
+    message: "Request to generate hate speech detected — blocked by content policy."
+  - id: kw-warn-sensitive-topics
+    name: Warn on Sensitive Topic Requests
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "competitor analysis"
+        - "proprietary information of"
+        - "trade secrets"
+        - "confidential business data"
+      target: input
+      case_sensitive: false
+    action: warn
+    message: "Request involves potentially sensitive business topic — review before proceeding."
+  - id: kw-block-self-harm
+    name: Block Self-Harm Content
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "instructions for self-harm"
+        - "how to hurt myself"
+        - "methods of suicide"
+        - "self-harm techniques"
+      target: input
+      case_sensitive: false
+    action: block
+    message: "Self-harm content request detected — blocked. Signposting help resources."
+references:
+  - "https://openai.com/usage-policies"
+  - "https://www.anthropic.com/usage-policy"
+  - "ISO/IEC 42001 — AI Management System"
+tags:
+  - keyword-blocking
+  - content-safety
+  - general
+  - harmful-content
+  - moderation

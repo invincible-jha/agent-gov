@@ -1,0 +1,74 @@
+id: eu-ai-act-article-5-prohibited
+name: EU AI Act Article 5 — Prohibited AI Practices
+version: "1.0"
+domain: eu-ai-act
+description: |
+  Enforces prohibitions on unacceptable-risk AI practices as defined in Article 5
+  of the EU AI Act. Covers subliminal manipulation, exploitation of vulnerable
+  groups, social scoring by public authorities, real-time biometric surveillance
+  in public spaces, and emotion recognition in workplaces or educational institutions.
+severity: critical
+rules:
+  - id: art5-no-subliminal-manipulation
+    name: Block Subliminal Manipulation Techniques
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "subliminal messaging"
+        - "subconscious manipulation"
+        - "below perception threshold"
+        - "neuro-linguistic manipulation"
+        - "covert behavioral influence"
+      target: input
+      case_sensitive: false
+    action: block
+    message: "Subliminal manipulation technique detected — prohibited under EU AI Act Article 5(1)(a)."
+  - id: art5-no-social-scoring
+    name: Block Social Scoring Operations
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "social credit score"
+        - "citizen behavior score"
+        - "social scoring system"
+        - "trustworthiness rating by government"
+      target: input
+      case_sensitive: false
+    action: block
+    message: "Social scoring by public authorities is prohibited under EU AI Act Article 5(1)(c)."
+  - id: art5-no-realtime-biometric
+    name: Block Real-Time Biometric Surveillance
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "real-time facial recognition in public"
+        - "live biometric surveillance"
+        - "mass biometric identification"
+        - "continuous public surveillance biometrics"
+      target: input
+      case_sensitive: false
+    action: block
+    message: "Real-time biometric identification in public spaces is prohibited under EU AI Act Article 5(1)(d)."
+  - id: art5-no-vulnerability-exploitation
+    name: Warn on Vulnerable Group Targeting
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "exploit mental illness"
+        - "target elderly vulnerability"
+        - "exploit disability"
+        - "manipulate vulnerable persons"
+      target: input
+      case_sensitive: false
+    action: block
+    message: "Exploitation of vulnerable groups is prohibited under EU AI Act Article 5(1)(b)."
+references:
+  - "https://artificialintelligenceact.eu/the-act/"
+  - "EU AI Act Article 5 — Prohibited Artificial Intelligence Practices"
+  - "Regulation (EU) 2024/1689"
+tags:
+  - eu-ai-act
+  - article-5
+  - prohibited-practices
+  - high-risk
+  - biometrics

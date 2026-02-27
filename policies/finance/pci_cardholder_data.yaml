@@ -1,0 +1,59 @@
+id: pci-cardholder-data
+name: PCI DSS Cardholder Data Protection
+version: "1.0"
+domain: finance
+description: |
+  Enforces PCI DSS (Payment Card Industry Data Security Standard) requirements
+  for protecting cardholder data. Prevents AI agents from logging, storing,
+  transmitting, or outputting Primary Account Numbers (PAN), CVVs, PINs,
+  or full magnetic stripe data in clear text.
+severity: critical
+rules:
+  - id: pci-block-pan
+    name: Block Primary Account Number Output
+    condition: regex_match
+    parameters:
+      pattern: "\\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|3[47][0-9]{13}|3(?:0[0-5]|[68][0-9])[0-9]{11}|6(?:011|5[0-9]{2})[0-9]{12})\\b"
+      target: output
+    action: redact
+    message: "Credit card number detected in output — redacted per PCI DSS Requirement 3."
+  - id: pci-block-cvv
+    name: Block CVV in Output
+    condition: regex_match
+    parameters:
+      pattern: "(?i)\\b(cvv|cvc|cvv2|cvc2|cid)[:\\s]*\\d{3,4}\\b"
+      target: output
+    action: block
+    message: "CVV/CVC value in output is prohibited per PCI DSS — cards must never store verification codes."
+  - id: pci-block-full-pan-input
+    name: Detect Full PAN in Input
+    condition: regex_match
+    parameters:
+      pattern: "\\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|3[47][0-9]{13})\\b"
+      target: input
+    action: warn
+    message: "Full PAN detected in input — ensure cardholder data is masked before processing."
+  - id: pci-no-store-sensitive-auth
+    name: Block Storage of Sensitive Authentication Data
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "store full track data"
+        - "save magnetic stripe"
+        - "store pin block"
+        - "retain cvv"
+        - "log card number"
+      target: input
+      case_sensitive: false
+    action: block
+    message: "Storage of sensitive authentication data is prohibited under PCI DSS Requirement 3.2."
+references:
+  - "https://www.pcisecuritystandards.org/document_library/"
+  - "PCI DSS v4.0 Requirement 3 — Protect Stored Account Data"
+  - "PCI DSS v4.0 Requirement 4 — Protect Cardholder Data with Strong Cryptography"
+tags:
+  - pci-dss
+  - finance
+  - cardholder-data
+  - payment-card
+  - encryption

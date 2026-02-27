@@ -1,0 +1,57 @@
+id: general-rate-limiting
+name: General API Rate Limiting Policy
+version: "1.0"
+domain: general
+description: |
+  Enforces rate limits on AI agent API calls to prevent abuse, ensure fair usage,
+  and protect downstream services from being overwhelmed. Implements sliding window
+  rate limits at per-second, per-minute, and per-hour granularities. Supports
+  different limits by agent tier and action type.
+severity: medium
+rules:
+  - id: rate-limit-per-minute
+    name: Per-Minute Request Rate Limit
+    condition: rate_limit
+    parameters:
+      max_requests: 60
+      window_seconds: 60
+      scope: agent_id
+    action: block
+    message: "Rate limit exceeded: maximum 60 requests per minute per agent."
+  - id: rate-limit-per-hour
+    name: Per-Hour Request Rate Limit
+    condition: rate_limit
+    parameters:
+      max_requests: 1000
+      window_seconds: 3600
+      scope: agent_id
+    action: block
+    message: "Hourly rate limit exceeded: maximum 1,000 requests per hour per agent."
+  - id: rate-limit-burst-protection
+    name: Burst Protection — Per-Second Limit
+    condition: rate_limit
+    parameters:
+      max_requests: 10
+      window_seconds: 1
+      scope: agent_id
+    action: block
+    message: "Burst rate limit exceeded: maximum 10 requests per second."
+  - id: rate-limit-warn-approaching
+    name: Warn When Approaching Rate Limit
+    condition: rate_limit
+    parameters:
+      max_requests: 50
+      window_seconds: 60
+      scope: agent_id
+      warn_threshold_percent: 80
+    action: warn
+    message: "Approaching rate limit — 80% of per-minute quota used."
+references:
+  - "https://cloud.google.com/architecture/rate-limiting-strategies-techniques"
+  - "OWASP API Security Top 10 — API4:2023 Unrestricted Resource Consumption"
+tags:
+  - rate-limiting
+  - general
+  - api-security
+  - abuse-prevention
+  - throttling

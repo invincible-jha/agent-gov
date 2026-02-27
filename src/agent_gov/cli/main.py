@@ -639,5 +639,432 @@ def plugins_list_command() -> None:
     console.print(fw_table)
 
 
+# ---------------------------------------------------------------------------
+# eu-ai-act classify
+# ---------------------------------------------------------------------------
+
+
+@cli.command(name="classify")
+@click.option(
+    "--description",
+    "-d",
+    "description",
+    required=True,
+    help="Free-text description of the AI system.",
+)
+@click.option(
+    "--use-case",
+    "-u",
+    "use_case",
+    multiple=True,
+    help="Intended use case (repeatable).",
+)
+@click.option(
+    "--data-category",
+    "-c",
+    "data_category",
+    multiple=True,
+    help="Data category processed by the system (repeatable).",
+)
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["table", "json"]),
+    default="table",
+    show_default=True,
+    help="Output format.",
+)
+def classify_command(
+    description: str,
+    use_case: tuple[str, ...],
+    data_category: tuple[str, ...],
+    output_format: str,
+) -> None:
+    """Classify an AI system's risk level per the EU AI Act (Annex III)."""
+    import dataclasses
+
+    from agent_gov.frameworks.eu_ai_act_classifier import EUAIActClassifier
+
+    classifier = EUAIActClassifier()
+    result = classifier.classify(
+        system_description=description,
+        use_cases=list(use_case) if use_case else None,
+        data_categories=list(data_category) if data_category else None,
+    )
+
+    if output_format == "json":
+        click.echo(json.dumps(dataclasses.asdict(result), indent=2))
+        return
+
+    # Rich table output
+    level_colours: dict[str, str] = {
+        "unacceptable": "red",
+        "high": "yellow",
+        "limited": "cyan",
+        "minimal": "green",
+    }
+    colour = level_colours.get(result.level.value, "white")
+
+    console.print(
+        Panel.fit(
+            f"[bold {colour}]{result.level.value.upper()}[/bold {colour}]\n"
+            f"[bold]Category:[/bold] {result.annex_iii_category}\n"
+            f"[bold]Confidence:[/bold] {result.confidence:.0%}\n"
+            f"[bold]Reasoning:[/bold] {result.reasoning}",
+            title="EU AI Act Risk Classification",
+            border_style=colour,
+        )
+    )
+
+    if result.article_references:
+        console.print(
+            f"[bold]Articles:[/bold] {', '.join(result.article_references)}"
+        )
+
+    if result.obligations:
+        table = Table(title="Obligations", box=None, padding=(0, 1))
+        table.add_column("Requirement", style="cyan")
+        for obligation in result.obligations:
+            table.add_row(obligation)
+        console.print(table)
+
+
+# ---------------------------------------------------------------------------
+# eu-ai-act document
+# ---------------------------------------------------------------------------
+
+
+@cli.command(name="document")
+@click.option(
+    "--system-name",
+    "system_name",
+    required=True,
+    help="Name of the AI system.",
+)
+@click.option(
+    "--provider",
+    "provider",
+    required=True,
+    help="Provider organisation name.",
+)
+@click.option(
+    "--description",
+    "description",
+    required=True,
+    help="General description of the AI system.",
+)
+@click.option(
+    "--output",
+    "-o",
+    "output",
+    required=True,
+    help="Output directory for generated documentation files.",
+)
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["markdown", "json", "both"]),
+    default="both",
+    show_default=True,
+    help="Export format.",
+)
+def document_command(
+    system_name: str,
+    provider: str,
+    description: str,
+    output: str,
+    output_format: str,
+) -> None:
+    """Generate EU AI Act Annex IV technical documentation."""
+    from pathlib import Path as _Path
+
+    from agent_gov.frameworks.eu_ai_act_docs import AnnexIVDocumentation
+
+    doc = AnnexIVDocumentation(
+        system_name=system_name,
+        provider_name=provider,
+        system_description=description,
+        intended_purpose=description,
+    )
+
+    out_path = _Path(output)
+    out_path.mkdir(parents=True, exist_ok=True)
+    created: list[str] = []
+
+    if output_format in ("markdown", "both"):
+        md_path = out_path / "annex-iv-technical-documentation.md"
+        md_path.write_text(doc.to_markdown(), encoding="utf-8")
+        created.append(str(md_path))
+
+    if output_format in ("json", "both"):
+        import dataclasses
+
+        json_path = out_path / "annex-iv-data.json"
+        json_path.write_text(
+            json.dumps(dataclasses.asdict(doc), indent=2),
+            encoding="utf-8",
+        )
+        created.append(str(json_path))
+
+    for file_path in created:
+        console.print(f"[green]Created:[/green] {file_path}")
+
+    console.print(
+        f"\n[bold]Documentation generated[/bold] for [cyan]{system_name}[/cyan] "
+        f"in [bold]{output}[/bold]"
+    )
+
+
+# ---------------------------------------------------------------------------
+# policy library group
+# ---------------------------------------------------------------------------
+
+
+@cli.group(name="policy")
+def policy_group() -> None:
+    """Commands for managing the governance policy library."""
+
+
+@policy_group.command(name="list")
+@click.option(
+    "--source",
+    "source_dir",
+    default=None,
+    type=click.Path(file_okay=False),
+    help="Directory to scan for policy YAML files.  Defaults to the built-in library.",
+)
+@click.option(
+    "--domain",
+    "domain",
+    default=None,
+    type=click.Choice(["healthcare", "finance", "eu-ai-act", "general", "gdpr"]),
+    help="Filter policies by compliance domain.",
+)
+@click.option(
+    "--severity",
+    "severity",
+    default=None,
+    type=click.Choice(["critical", "high", "medium", "low"]),
+    help="Filter policies by severity level.",
+)
+def policy_list_command(
+    source_dir: Optional[str],
+    domain: Optional[str],
+    severity: Optional[str],
+) -> None:
+    """List available governance policies from the policy library."""
+    from pathlib import Path as _Path
+
+    from agent_gov.policies.loader import LibraryPolicyLoadError, LibraryPolicyLoader
+
+    # Resolve source directory: use built-in library if not specified
+    if source_dir:
+        resolved_source = _Path(source_dir)
+    else:
+        resolved_source = _Path(__file__).parent.parent.parent.parent.parent / "policies"
+        if not resolved_source.exists():
+            # Fall back to relative path from cwd
+            resolved_source = _Path.cwd() / "policies"
+
+    if not resolved_source.exists():
+        err_console.print(
+            f"[red]Policy library directory not found:[/red] {resolved_source}\n"
+            "Use [cyan]--source[/cyan] to specify the policies directory."
+        )
+        sys.exit(1)
+
+    loader = LibraryPolicyLoader()
+    try:
+        policies = loader.load_directory(
+            resolved_source,
+            recursive=True,
+            domain_filter=domain,
+        )
+    except LibraryPolicyLoadError as exc:
+        err_console.print(f"[red]Error loading policies:[/red] {exc}")
+        sys.exit(1)
+
+    # Apply severity filter (not natively supported in loader)
+    if severity:
+        policies = [p for p in policies if p.severity.value == severity]
+
+    if not policies:
+        console.print("[yellow]No policies found matching the given filters.[/yellow]")
+        return
+
+    table = Table(title=f"Policy Library ({len(policies)} policies)", box=None, padding=(0, 1))
+    table.add_column("ID", style="cyan")
+    table.add_column("Name")
+    table.add_column("Domain", style="magenta")
+    table.add_column("Severity", justify="center")
+    table.add_column("Rules", justify="right")
+    table.add_column("Tags")
+
+    severity_styles: dict[str, str] = {
+        "critical": "red",
+        "high": "yellow",
+        "medium": "cyan",
+        "low": "green",
+    }
+
+    for policy in sorted(policies, key=lambda p: (p.domain.value, p.id)):
+        sev_style = severity_styles.get(policy.severity.value, "white")
+        table.add_row(
+            policy.id,
+            policy.name,
+            policy.domain.value,
+            Text(policy.severity.value.upper(), style=sev_style),
+            str(len(policy.rules)),
+            ", ".join(policy.tags[:3]),
+        )
+
+    console.print(table)
+
+
+@policy_group.command(name="install")
+@click.option(
+    "--source",
+    "source_dir",
+    required=True,
+    type=click.Path(exists=True, file_okay=False, readable=True),
+    help="Source directory containing policy YAML files.",
+)
+@click.option(
+    "--target",
+    "target_dir",
+    required=True,
+    type=click.Path(file_okay=False),
+    help="Target directory to install policies into.",
+)
+@click.option(
+    "--domain",
+    "domain",
+    default=None,
+    type=click.Choice(["healthcare", "finance", "eu-ai-act", "general", "gdpr"]),
+    help="Only install policies for this domain.",
+)
+@click.option(
+    "--no-overwrite",
+    "no_overwrite",
+    is_flag=True,
+    default=False,
+    help="Skip files that already exist in the target directory.",
+)
+@click.option(
+    "--dry-run",
+    "dry_run",
+    is_flag=True,
+    default=False,
+    help="Preview what would be installed without copying files.",
+)
+def policy_install_command(
+    source_dir: str,
+    target_dir: str,
+    domain: Optional[str],
+    no_overwrite: bool,
+    dry_run: bool,
+) -> None:
+    """Install governance policies from a source directory into a target directory."""
+    from agent_gov.policies.installer import LibraryPolicyInstaller
+
+    installer = LibraryPolicyInstaller()
+
+    try:
+        results = installer.install(
+            source=source_dir,
+            target=target_dir,
+            domain=domain,
+            overwrite=not no_overwrite,
+            dry_run=dry_run,
+        )
+    except ValueError as exc:
+        err_console.print(f"[red]Install error:[/red] {exc}")
+        sys.exit(1)
+
+    if not results:
+        console.print("[yellow]No policy files found in source directory.[/yellow]")
+        return
+
+    dry_run_label = " [dim](dry-run)[/dim]" if dry_run else ""
+    table = Table(
+        title=f"Policy Installation{dry_run_label}",
+        box=None,
+        padding=(0, 1),
+    )
+    table.add_column("Policy ID", style="cyan")
+    table.add_column("Domain", style="magenta")
+    table.add_column("Status", justify="center")
+    table.add_column("Destination")
+
+    installed_count = 0
+    skipped_count = 0
+    error_count = 0
+
+    for result in results:
+        if result.error:
+            status_text = Text("ERROR", style="red")
+            error_count += 1
+        elif result.skipped:
+            status_text = Text("SKIPPED", style="yellow")
+            skipped_count += 1
+        elif result.dry_run:
+            status_text = Text("WOULD INSTALL", style="cyan")
+            installed_count += 1
+        else:
+            status_text = Text("INSTALLED", style="green")
+            installed_count += 1
+
+        table.add_row(
+            result.policy_id,
+            result.domain,
+            status_text,
+            str(result.target_path),
+        )
+
+    console.print(table)
+    console.print(
+        f"\n[dim]Installed: {installed_count}  "
+        f"Skipped: {skipped_count}  "
+        f"Errors: {error_count}[/dim]"
+    )
+
+    if error_count > 0:
+        sys.exit(1)
+
+
+@policy_group.command(name="validate")
+@click.argument(
+    "policy_file",
+    type=click.Path(exists=True, dir_okay=False, readable=True),
+)
+def policy_validate_command(policy_file: str) -> None:
+    """Validate a governance policy YAML file against the library schema."""
+    from pathlib import Path as _Path
+
+    from agent_gov.policies.validator import LibraryPolicyValidator
+
+    validator = LibraryPolicyValidator()
+    result = validator.validate_file(_Path(policy_file))
+
+    if result.valid:
+        console.print(
+            Panel.fit(
+                f"[bold green]VALID[/bold green]  [cyan]{policy_file}[/cyan]",
+                title="Policy Validation",
+                border_style="green",
+            )
+        )
+    else:
+        error_lines = "\n".join(f"  • {err}" for err in result.errors)
+        console.print(
+            Panel.fit(
+                f"[bold red]INVALID[/bold red]  [cyan]{policy_file}[/cyan]\n\n{error_lines}",
+                title="Policy Validation",
+                border_style="red",
+            )
+        )
+        sys.exit(2)
+
+
 if __name__ == "__main__":
     cli()

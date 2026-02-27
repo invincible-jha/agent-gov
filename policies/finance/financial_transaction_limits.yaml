@@ -1,0 +1,62 @@
+id: financial-transaction-limits
+name: Financial Transaction Limit Controls
+version: "1.0"
+domain: finance
+description: |
+  Enforces transaction amount limits for AI agent-initiated or AI-assisted
+  financial transactions. Prevents runaway automation from executing high-value
+  transactions without human approval. Implements tiered thresholds with
+  warn, hold, and block actions based on transaction value.
+severity: high
+rules:
+  - id: txn-warn-high-value
+    name: Warn on High-Value Transaction
+    condition: cost_limit
+    parameters:
+      max_value: 10000
+      field: transaction_amount
+      currency: USD
+    action: warn
+    message: "Transaction exceeds $10,000 — human review recommended before execution."
+  - id: txn-block-very-high-value
+    name: Block Very High-Value Transaction
+    condition: cost_limit
+    parameters:
+      max_value: 100000
+      field: transaction_amount
+      currency: USD
+    action: block
+    message: "Transaction exceeds $100,000 — automated execution blocked, escalate to approver."
+  - id: txn-block-bulk-transfers
+    name: Block Bulk Transfer Keywords
+    condition: keyword_block
+    parameters:
+      keywords:
+        - "transfer all funds"
+        - "move all balance"
+        - "withdraw all"
+        - "liquidate all positions"
+        - "empty account"
+      target: input
+      case_sensitive: false
+    action: block
+    message: "Bulk fund transfer instruction detected — blocked pending human authorization."
+  - id: txn-rate-limit-rapid-transactions
+    name: Rate Limit Rapid Transaction Submission
+    condition: rate_limit
+    parameters:
+      max_requests: 10
+      window_seconds: 60
+      scope: agent_id
+    action: block
+    message: "Transaction rate limit exceeded — potential fraud pattern detected."
+references:
+  - "https://www.ffiec.gov/exam/bsa_aml/default.htm"
+  - "FinCEN CTR requirements — transactions over $10,000"
+  - "FFIEC IT Examination Handbook — Retail Payment Systems"
+tags:
+  - finance
+  - transaction-limits
+  - fraud-prevention
+  - aml
+  - automation-controls

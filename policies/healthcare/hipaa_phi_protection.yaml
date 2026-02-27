@@ -1,0 +1,52 @@
+id: hipaa-phi-protection
+name: HIPAA PHI Protection
+version: "1.0"
+domain: healthcare
+description: |
+  Enforces protections for Protected Health Information (PHI) as defined under
+  HIPAA. Prevents AI agents from exposing, transmitting, or storing PHI without
+  appropriate safeguards. Covers identifiers including names, addresses, SSNs,
+  medical record numbers, health plan beneficiary numbers, and biometric identifiers.
+severity: critical
+rules:
+  - id: phi-ssn-block
+    name: Block SSN in Output
+    condition: regex_match
+    parameters:
+      pattern: "\\b\\d{3}-\\d{2}-\\d{4}\\b"
+      target: output
+    action: block
+    message: "Output contains a Social Security Number — PHI disclosure prevented."
+  - id: phi-mrn-block
+    name: Block Medical Record Numbers
+    condition: regex_match
+    parameters:
+      pattern: "(?i)\\bMRN[:\\s#]*\\d{5,12}\\b"
+      target: output
+    action: redact
+    message: "Output contains a Medical Record Number — redacted per HIPAA PHI rules."
+  - id: phi-dob-block
+    name: Block Date of Birth Patterns
+    condition: regex_match
+    parameters:
+      pattern: "(?i)\\b(date of birth|DOB)[:\\s]*\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4}\\b"
+      target: output
+    action: redact
+    message: "Output contains a Date of Birth — redacted per HIPAA PHI rules."
+  - id: phi-health-plan-id
+    name: Block Health Plan Beneficiary Numbers
+    condition: regex_match
+    parameters:
+      pattern: "(?i)\\b(health plan|beneficiary|member)[\\s#:]*[A-Z0-9]{8,15}\\b"
+      target: output
+    action: warn
+    message: "Potential health plan beneficiary number detected in output."
+references:
+  - "https://www.hhs.gov/hipaa/for-professionals/privacy/index.html"
+  - "45 CFR Part 164 Subpart E — Privacy of Individually Identifiable Health Information"
+tags:
+  - hipaa
+  - phi
+  - healthcare
+  - privacy
+  - pii
