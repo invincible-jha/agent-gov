@@ -250,14 +250,3 @@ export function createAgentGovClient(
   };
 }
 
-/** Re-export types for convenience. */
-export type {
-  CheckComplianceRequest,
-  ComplianceReport,
-  AuditEntry,
-  AuditLogQuery,
-  GenerateReportRequest,
-  ComplianceCostReport,
-  ValidatePolicyRequest,
-  ValidatePolicyResponse,
-};
