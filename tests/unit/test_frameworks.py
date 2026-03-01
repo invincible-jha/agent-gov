@@ -114,26 +114,27 @@ class TestFrameworkReport:
 
 
 class TestEuAiActFramework:
-    def test_checklist_has_eight_items(self) -> None:
+    def test_checklist_has_at_least_40_items(self) -> None:
         fw = EuAiActFramework()
-        assert len(fw.checklist()) == 8
+        assert len(fw.checklist()) >= 40
 
-    def test_checklist_ids(self) -> None:
+    def test_checklist_ids_contain_original_eight(self) -> None:
         fw = EuAiActFramework()
         ids = {item.id for item in fw.checklist()}
-        assert ids == {"A6", "A9", "A10", "A13", "A14", "A15", "A52", "A60"}
+        # Original 8 items must still be present after expansion
+        assert {"A6", "A9", "A10", "A13", "A14", "A15", "A52", "A60"}.issubset(ids)
 
     def test_run_check_all_pass(self) -> None:
         fw = EuAiActFramework()
         evidence = {item.id: {"status": "pass", "evidence": "ok"} for item in fw.checklist()}
         report = fw.run_check(evidence)
-        assert report.passed_count == 8
+        assert report.passed_count == len(fw.checklist())
         assert report.failed_count == 0
 
     def test_run_check_no_evidence_gives_unknown(self) -> None:
         fw = EuAiActFramework()
         report = fw.run_check({})
-        assert report.unknown_count == 8
+        assert report.unknown_count == len(fw.checklist())
 
     def test_run_check_partial_evidence(self) -> None:
         fw = EuAiActFramework()
@@ -143,7 +144,7 @@ class TestEuAiActFramework:
         })
         assert report.passed_count == 1
         assert report.failed_count == 1
-        assert report.unknown_count == 6
+        assert report.unknown_count == len(fw.checklist()) - 2
 
     def test_run_check_truthy_scalar(self) -> None:
         fw = EuAiActFramework()

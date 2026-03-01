@@ -21,6 +21,14 @@ Part of the [AumOS](https://github.com/aumos-ai) open-source agent infrastructur
 - Compliance report generator producing JSON and Markdown summaries grouped by framework and severity
 - `agentcore` bridge that hooks `PolicyEngine` evaluation into the `EventBus` lifecycle so governance runs transparently alongside agent execution
 
+## Current Limitations
+
+> **Transparency note**: We list known limitations to help you evaluate fit.
+
+- **Evaluation**: Rule-based policy evaluation only. No ML-powered policy learning.
+- **Adapters**: Governance overlays (observability/compliance on top of frameworks), not provider integrations.
+- **Frameworks**: EU AI Act, GDPR, HIPAA, SOC2, ISO 42001, NIST AI RMF — no sector-specific frameworks yet.
+
 ## Quick Start
 
 Install from PyPI:

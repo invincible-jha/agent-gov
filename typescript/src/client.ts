@@ -1,8 +1,12 @@
 /**
  * HTTP client for the agent-gov governance API.
  *
- * Uses the Fetch API (available natively in Node 18+, browsers, and Deno).
- * No external dependencies required.
+ * Delegates all HTTP transport to `@aumos/sdk-core` which provides
+ * automatic retry with exponential back-off, timeout management via
+ * `AbortSignal.timeout`, interceptor support, and a typed error hierarchy.
+ *
+ * The public-facing `ApiResult<T>` envelope is preserved for full
+ * backward compatibility with existing callers.
  *
  * @example
  * ```ts
@@ -22,8 +26,16 @@
  * ```
  */
 
+import {
+  createHttpClient,
+  HttpError,
+  NetworkError,
+  TimeoutError,
+  AumosError,
+  type HttpClient,
+} from "@aumos/sdk-core";
+
 import type {
-  ApiError,
   ApiResult,
   AuditEntry,
   AuditLogQuery,
@@ -50,55 +62,57 @@ export interface AgentGovClientConfig {
 }
 
 // ---------------------------------------------------------------------------
-// Internal helpers
+// Internal adapter — maps sdk-core ResponseData / errors to ApiResult
 // ---------------------------------------------------------------------------
 
-async function fetchJson<T>(
-  url: string,
-  init: RequestInit,
-  timeoutMs: number,
+/**
+ * Executes `operation` and normalises the result into an `ApiResult<T>`.
+ *
+ * Success: extracts `data` from the `ResponseData` envelope.
+ * Failure: converts sdk-core typed errors into the legacy `ApiResult` shape.
+ */
+async function callApi<T>(
+  operation: () => Promise<{ readonly data: T; readonly status: number }>,
 ): Promise<ApiResult<T>> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
   try {
-    const response = await fetch(url, { ...init, signal: controller.signal });
-    clearTimeout(timeoutId);
-
-    const body = await response.json() as unknown;
-
-    if (!response.ok) {
-      const errorBody = body as Partial<ApiError>;
+    const response = await operation();
+    return { ok: true, data: response.data };
+  } catch (error: unknown) {
+    if (error instanceof HttpError) {
       return {
         ok: false,
-        error: {
-          error: errorBody.error ?? "Unknown error",
-          detail: errorBody.detail ?? "",
-        },
-        status: response.status,
+        error: { error: error.message, detail: String(error.body ?? "") },
+        status: error.statusCode,
       };
     }
-
-    return { ok: true, data: body as T };
-  } catch (err: unknown) {
-    clearTimeout(timeoutId);
-    const message = err instanceof Error ? err.message : String(err);
+    if (error instanceof TimeoutError) {
+      return {
+        ok: false,
+        error: { error: "Request timed out", detail: error.message },
+        status: 0,
+      };
+    }
+    if (error instanceof NetworkError) {
+      return {
+        ok: false,
+        error: { error: "Network error", detail: error.message },
+        status: 0,
+      };
+    }
+    if (error instanceof AumosError) {
+      return {
+        ok: false,
+        error: { error: error.code, detail: error.message },
+        status: error.statusCode ?? 0,
+      };
+    }
+    const message = error instanceof Error ? error.message : String(error);
     return {
       ok: false,
-      error: { error: "Network error", detail: message },
+      error: { error: "Unexpected error", detail: message },
       status: 0,
     };
   }
-}
-
-function buildHeaders(
-  extraHeaders: Readonly<Record<string, string>> | undefined,
-): Record<string, string> {
-  return {
-    "Content-Type": "application/json",
-    Accept: "application/json",
-    ...extraHeaders,
-  };
 }
 
 // ---------------------------------------------------------------------------
@@ -110,9 +124,6 @@ export interface AgentGovClient {
   /**
    * Evaluate an agent action against a named policy.
    *
-   * Sends the action payload to the governance engine and returns a full
-   * ComplianceReport with per-rule verdicts, pass/fail status, and severity.
-   *
    * @param request - The agent ID, action payload, and target policy name.
    * @returns A ComplianceReport with all rule verdicts and an overall verdict.
    */
@@ -122,8 +133,6 @@ export interface AgentGovClient {
 
   /**
    * Retrieve the audit log with optional filtering.
-   *
-   * Returns entries in reverse chronological order (most recent first).
    *
    * @param query - Optional filter parameters (agentId, policyName, verdict, limit).
    * @returns Array of AuditEntry records matching the filter criteria.
@@ -135,9 +144,6 @@ export interface AgentGovClient {
   /**
    * Generate a cost-of-compliance report for a regulatory framework.
    *
-   * Computes per-requirement cost estimates under the given automation
-   * scenario and returns aggregated totals with savings percentages.
-   *
    * @param request - Framework name, automation coverage overrides, and hourly rate.
    * @returns A ComplianceCostReport with full cost breakdown.
    */
@@ -147,10 +153,6 @@ export interface AgentGovClient {
 
   /**
    * Validate a policy configuration without persisting it.
-   *
-   * Checks rule type references, parameter schemas, and structural
-   * correctness. Returns a list of validation errors when the policy
-   * is invalid.
    *
    * @param request - The full policy configuration to validate.
    * @returns Validation result with error messages and enabled rule count.
@@ -173,80 +175,42 @@ export interface AgentGovClient {
 export function createAgentGovClient(
   config: AgentGovClientConfig,
 ): AgentGovClient {
-  const { baseUrl, timeoutMs = 30_000, headers: extraHeaders } = config;
-  const baseHeaders = buildHeaders(extraHeaders);
+  const http: HttpClient = createHttpClient({
+    baseUrl: config.baseUrl,
+    timeout: config.timeoutMs ?? 30_000,
+    defaultHeaders: config.headers,
+  });
 
   return {
-    async checkCompliance(
+    checkCompliance(
       request: CheckComplianceRequest,
     ): Promise<ApiResult<ComplianceReport>> {
-      return fetchJson<ComplianceReport>(
-        `${baseUrl}/compliance/check`,
-        {
-          method: "POST",
-          headers: baseHeaders,
-          body: JSON.stringify(request),
-        },
-        timeoutMs,
-      );
+      return callApi(() => http.post<ComplianceReport>("/compliance/check", request));
     },
 
-    async getAuditLog(
+    getAuditLog(
       query: AuditLogQuery = {},
     ): Promise<ApiResult<readonly AuditEntry[]>> {
-      const params = new URLSearchParams();
-      if (query.agentId !== undefined) {
-        params.set("agent_id", query.agentId);
-      }
-      if (query.policyName !== undefined) {
-        params.set("policy_name", query.policyName);
-      }
-      if (query.verdict !== undefined) {
-        params.set("verdict", query.verdict);
-      }
-      if (query.limit !== undefined) {
-        params.set("limit", String(query.limit));
-      }
-
-      const queryString = params.toString();
-      const url = queryString
-        ? `${baseUrl}/audit/log?${queryString}`
-        : `${baseUrl}/audit/log`;
-
-      return fetchJson<readonly AuditEntry[]>(
-        url,
-        { method: "GET", headers: baseHeaders },
-        timeoutMs,
+      const queryParams: Record<string, string> = {};
+      if (query.agentId !== undefined) queryParams["agent_id"] = query.agentId;
+      if (query.policyName !== undefined) queryParams["policy_name"] = query.policyName;
+      if (query.verdict !== undefined) queryParams["verdict"] = query.verdict;
+      if (query.limit !== undefined) queryParams["limit"] = String(query.limit);
+      return callApi(() =>
+        http.get<readonly AuditEntry[]>("/audit/log", { queryParams }),
       );
     },
 
-    async generateReport(
+    generateReport(
       request: GenerateReportRequest,
     ): Promise<ApiResult<ComplianceCostReport>> {
-      return fetchJson<ComplianceCostReport>(
-        `${baseUrl}/compliance/report`,
-        {
-          method: "POST",
-          headers: baseHeaders,
-          body: JSON.stringify(request),
-        },
-        timeoutMs,
-      );
+      return callApi(() => http.post<ComplianceCostReport>("/compliance/report", request));
     },
 
-    async validatePolicy(
+    validatePolicy(
       request: ValidatePolicyRequest,
     ): Promise<ApiResult<ValidatePolicyResponse>> {
-      return fetchJson<ValidatePolicyResponse>(
-        `${baseUrl}/policies/validate`,
-        {
-          method: "POST",
-          headers: baseHeaders,
-          body: JSON.stringify(request),
-        },
-        timeoutMs,
-      );
+      return callApi(() => http.post<ValidatePolicyResponse>("/policies/validate", request));
     },
   };
 }
-

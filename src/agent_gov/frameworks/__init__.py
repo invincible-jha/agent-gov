@@ -10,8 +10,11 @@ from agent_gov.frameworks.eu_ai_act_classifier import (
     RiskLevel,
 )
 from agent_gov.frameworks.eu_ai_act_docs import AnnexIVDocumentation
+from agent_gov.frameworks.gap_analyzer import GapAnalysisReport, GapAnalyzer, OverlapGroup, RemediationItem
 from agent_gov.frameworks.gdpr import GdprFramework
 from agent_gov.frameworks.hipaa import HipaaFramework
+from agent_gov.frameworks.iso_42001 import Iso42001Framework
+from agent_gov.frameworks.nist_ai_rmf import NistAiRmfFramework
 from agent_gov.frameworks.soc2 import Soc2Framework
 
 __all__ = [
@@ -23,8 +26,14 @@ __all__ = [
     "EUAIActClassifier",
     "EuAiActFramework",
     "FrameworkReport",
+    "GapAnalysisReport",
+    "GapAnalyzer",
     "GdprFramework",
     "HipaaFramework",
+    "Iso42001Framework",
+    "NistAiRmfFramework",
+    "OverlapGroup",
+    "RemediationItem",
     "RiskClassification",
     "RiskLevel",
     "Soc2Framework",

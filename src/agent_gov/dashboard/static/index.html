@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agent Gov Compliance Dashboard</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header>
+    <div class="logo">aumos <span>| governance</span></div>
+    <nav>
+      <button class="tab-btn active" data-tab="policies">Policy Rules</button>
+      <button class="tab-btn" data-tab="audit">Audit Log</button>
+      <button class="tab-btn" data-tab="compliance">Compliance</button>
+      <button class="tab-btn" data-tab="frameworks">Frameworks</button>
+    </nav>
+    <span class="refresh-info" id="last-refresh">Loading...</span>
+  </header>
+
+  <main>
+    <!-- Policy Rules Tab -->
+    <div class="tab-panel active" id="tab-policies">
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">Policies</div>
+          <div class="stat-value" id="qs-policies">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Evidence Records</div>
+          <div class="stat-value" id="qs-evidence">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Global Pass Rate</div>
+          <div class="stat-value" id="qs-passrate">-</div>
+          <div class="stat-sub">% of evaluations passing</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Failures</div>
+          <div class="stat-value" id="qs-fails" style="color:var(--danger)">-</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          Policy Rules Table
+          <button class="btn btn-ghost" onclick="loadPolicies()" style="margin-left:auto;font-size:12px;padding:4px 10px">Refresh</button>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>Policy ID</th>
+                <th>Status</th>
+                <th>Pass</th>
+                <th>Fail</th>
+                <th>Skip</th>
+                <th>Total</th>
+                <th>Pass Rate</th>
+              </tr>
+            </thead>
+            <tbody id="policies-tbody">
+              <tr><td colspan="7" class="empty-state">Loading policies...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Audit Log Tab -->
+    <div class="tab-panel" id="tab-audit">
+      <div class="card">
+        <div class="card-title">Audit Log</div>
+        <div class="search-row">
+          <input class="search-input" id="audit-policy-filter" placeholder="Policy ID..." style="max-width:180px" />
+          <input class="search-input" id="audit-rule-filter" placeholder="Rule ID..." style="max-width:160px" />
+          <select class="search-input" id="audit-result-filter" style="max-width:140px">
+            <option value="">All Results</option>
+            <option value="pass">Pass</option>
+            <option value="fail">Fail</option>
+            <option value="skip">Skip</option>
+          </select>
+          <button class="btn" onclick="loadAudit()">Filter</button>
+          <button class="btn btn-ghost" onclick="loadAudit()">Refresh</button>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Policy</th>
+                <th>Rule</th>
+                <th>Result</th>
+                <th>Context</th>
+              </tr>
+            </thead>
+            <tbody id="audit-tbody">
+              <tr><td colspan="5" class="empty-state">Loading audit log...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Compliance Posture Tab -->
+    <div class="tab-panel" id="tab-compliance">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Compliance Posture</div>
+          <div class="gauge-wrapper">
+            <canvas id="gauge-chart" width="220" height="140"></canvas>
+            <div class="gauge-value" id="gauge-pct">-</div>
+            <div class="gauge-label" id="gauge-label">Overall Compliance Score</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Posture Details</div>
+          <table>
+            <thead><tr><th>Metric</th><th>Value</th></tr></thead>
+            <tbody id="posture-tbody">
+              <tr><td colspan="2" class="empty-state">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Framework Coverage Tab -->
+    <div class="tab-panel" id="tab-frameworks">
+      <div class="card">
+        <div class="card-title">Framework Coverage Matrix</div>
+        <div style="overflow-x:auto">
+          <table class="matrix-table">
+            <thead>
+              <tr>
+                <th style="text-align:left">Framework</th>
+                <th>Total Rules</th>
+                <th>Passing</th>
+                <th>Coverage</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="framework-tbody">
+              <tr><td colspan="5" class="empty-state">Loading frameworks...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Coverage by Framework</div>
+        <div class="chart-container">
+          <canvas id="framework-bar-chart"></canvas>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="toast-container"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
